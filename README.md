@@ -21,36 +21,51 @@ another, each scores an **A**.
 
 ## Install in Antigravity
 
-A skill is just a folder containing a `SKILL.md`. Antigravity discovers skills from a `skills`
-directory; put these two folders there and reload.
+This repo **is** an Antigravity plugin: a `plugin.json` marker at the root, with the two skills under
+`skills/<name>/SKILL.md`. Install it as a plugin, or copy the loose skills.
 
-### Option A — install from this repo (recommended)
+### Option A — install as a plugin (recommended)
+
+Antigravity loads plugins from its plugins directory. Clone this repo into it as a named plugin:
 
 ```bash
-agy skills install https://github.com/npintaux/meta-skills.git
+git clone https://github.com/npintaux/meta-skills.git \
+  ~/.gemini/antigravity-cli/plugins/meta-skills
 ```
 
-This pulls the repository and registers every skill folder it finds (`skill-creator` and
-`skill-evaluator`).
+Then reload (or restart Antigravity) and confirm the skills are present:
 
-### Option B — manual copy
+```
+/skills reload
+/skills list      # confirm skill-creator and skill-evaluator appear
+```
 
-Clone the repo and copy the two skill folders into a skills directory:
+Both bundled skills (`skill-creator` and `skill-evaluator`) load at once.
+
+### Option B — manual copy of the loose skills
+
+If you just want the skills without the plugin wrapper, copy the two folders out of `skills/` into
+a skills directory:
 
 ```bash
 git clone https://github.com/npintaux/meta-skills.git
 
 # Workspace-scoped (only this project):
 mkdir -p .agents/skills
-cp -r meta-skills/skill-creator meta-skills/skill-evaluator .agents/skills/
+cp -r meta-skills/skills/skill-creator meta-skills/skills/skill-evaluator .agents/skills/
 
 # — or — user-global (every project):
 mkdir -p ~/.agents/skills
-cp -r meta-skills/skill-creator meta-skills/skill-evaluator ~/.agents/skills/
+cp -r meta-skills/skills/skill-creator meta-skills/skills/skill-evaluator ~/.agents/skills/
 ```
 
 > Antigravity / Gemini CLI accept either `.agents/skills/` (current) or `.gemini/skills/` as the
 > workspace path, and `~/.agents/skills/` (or `~/.gemini/skills/`) as the global path.
+
+> **Verify against your version of the docs.** The `plugin.json` fields, the plugins directory path,
+> and the exact reload/install commands are evolving across the Gemini CLI → Antigravity CLI
+> transition — confirm the structure here against <https://antigravity.google/docs/plugins> before
+> publishing.
 
 ### Reload and verify
 
@@ -83,25 +98,30 @@ The bundled scripts are non-interactive and can also be run directly:
 
 ```bash
 # Structural + best-practice validation (data → stdout, logs → stderr)
-python skill-creator/scripts/validate_skill.py path/to/some-skill --strict
+python skills/skill-creator/scripts/validate_skill.py path/to/some-skill --strict
 
 # Rubric score with an A–F grade and ranked fixes
-python skill-evaluator/scripts/score_skill.py path/to/some-skill --min 0.8
+python skills/skill-evaluator/scripts/score_skill.py path/to/some-skill --min 0.8
 ```
 
 ## Repository structure
 
 ```
-meta-skills/
-├── skill-creator/
-│   ├── SKILL.md
-│   ├── references/description-and-eval-cookbook.md   # description patterns + eval method
-│   └── scripts/validate_skill.py                     # non-interactive validator
-└── skill-evaluator/
-    ├── SKILL.md
-    ├── references/rubric.md                           # the 6-dimension rubric + dynamic checks
-    └── scripts/score_skill.py                         # non-interactive rubric scorer
+meta-skills/                          # the Antigravity plugin
+├── plugin.json                       # required plugin marker (name, version, …)
+└── skills/                           # skills MUST live here for plugin discovery
+    ├── skill-creator/
+    │   ├── SKILL.md
+    │   ├── references/description-and-eval-cookbook.md   # description patterns + eval method
+    │   └── scripts/validate_skill.py                     # non-interactive validator
+    └── skill-evaluator/
+        ├── SKILL.md
+        ├── references/rubric.md                           # the 6-dimension rubric + dynamic checks
+        └── scripts/score_skill.py                         # non-interactive rubric scorer
 ```
+
+> An Antigravity plugin may also carry optional `mcp_config.json`, `hooks.json`, and `rules/` —
+> this plugin ships skills only.
 
 ## Requirements
 

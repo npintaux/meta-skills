@@ -1,0 +1,7 @@
+{
+  "name": "meta-skills",
+  "version": "0.1.0",
+  "description": "Meta-skills for authoring and reviewing Agent Skills: skill-creator builds correct, well-triggering skills; skill-evaluator grades existing ones.",
+  "author": "npintaux",
+  "homepage": "https://github.com/npintaux/meta-skills"
+}
