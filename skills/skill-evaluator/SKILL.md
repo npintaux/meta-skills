@@ -1,6 +1,6 @@
 ---
 name: skill-evaluator
-description: Evaluates and scores an existing Agent Skill against the agentskills.io spec and authoring best practices, then reports a grade and ranked fixes. Use when the user asks to review, audit, grade, lint, or quality-check a skill, find out why a skill doesn't trigger, or decide whether a skill is ready to ship. Input is a path to a skill directory.
+description: Evaluates and scores an existing Agent Skill against the agentskills.io spec and authoring best practices, then reports a grade and ranked fixes. Use when the user asks to review, audit, grade, lint, or quality-check a skill, find out why a skill doesn't trigger, or decide whether a skill is ready to ship. Input is a path to a skill directory or a standalone .md file.
 ---
 
 # Skill Evaluator
@@ -23,18 +23,18 @@ Do **not** use to *author* a new skill from scratch — that's the `skill-creato
 create → evaluate → improve.)
 
 ## Inputs
-- **Required:** a path to the skill directory to evaluate (the folder containing `SKILL.md`).
+- **Required:** a path to the skill directory to evaluate (the folder containing `SKILL.md`), or a direct path to a standalone `.md` file.
 - **Optional:** a pass threshold (default grade B / ratio 0.8), and any existing eval prompts.
 
 ## Core Process
 
 ### 1. Locate and read the skill
-Confirm the target directory contains a `SKILL.md`. Read the frontmatter and body, and note which
-of `scripts/`, `references/`, `assets/` exist.
+Confirm the target directory contains a `SKILL.md`, or that the target file is a valid `.md` file. Read the frontmatter and body, and note which
+of `scripts/`, `references/`, `assets/` exist (if evaluating a directory).
 
 ### 2. Run the static rubric
 ```
-python scripts/score_skill.py <path/to/skill> --min 0.8
+python scripts/score_skill.py <path/to/skill-dir-or-file.md> --min 0.8
 ```
 This is read-only and non-interactive. It prints a JSON report (data on stdout, logs on stderr) with
 a 0–2 score on six dimensions — frontmatter validity, description trigger quality, progressive

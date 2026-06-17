@@ -93,15 +93,16 @@ Once installed, just ask the agent in natural language:
 
 - *"Create a skill that scaffolds a new microservice from our template."* → triggers `skill-creator`
 - *"Review the skill in ./my-skill and tell me whether it's ready to ship."* → triggers `skill-evaluator`
+- *"Grade this draft skill file at ./drafts/my-new-skill.md"* → also triggers `skill-evaluator`
 
-The bundled scripts are non-interactive and can also be run directly:
+The bundled scripts are non-interactive and can also be run directly. Both the `skill-evaluator` skill and the `score_skill.py` script accept either a directory path or a direct path to a standalone `.md` file (useful for early drafting or prototyping before establishing a full directory structure):
 
 ```bash
 # Structural + best-practice validation (data → stdout, logs → stderr)
 python skills/skill-creator/scripts/validate_skill.py path/to/some-skill --strict
 
 # Rubric score with an A–F grade and ranked fixes
-python skills/skill-evaluator/scripts/score_skill.py path/to/some-skill --min 0.8
+python skills/skill-evaluator/scripts/score_skill.py path/to/some-skill-dir-or-file.md --min 0.8
 ```
 
 ## Repository structure

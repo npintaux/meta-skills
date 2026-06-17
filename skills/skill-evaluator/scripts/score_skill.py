@@ -2,7 +2,7 @@
 # requires-python = ">=3.9"
 # dependencies = []
 # ///
-"""Static rubric scorer for an Agent Skill. Input: a skill directory.
+"""Static rubric scorer for an Agent Skill. Input: a skill directory or a standalone .md file.
 
 Self-contained (no cross-skill imports), read-only, non-interactive.
 DATA  -> stdout as JSON  (per-dimension scores + overall grade + fixes)
@@ -14,7 +14,7 @@ baseline-vs-with-skill behavioural testing — needs a live agent and is driven 
 SKILL.md, not this script.
 
 Usage:
-    python score_skill.py <path/to/skill-dir> [--min 0.8]
+    python score_skill.py <path/to/skill-dir-or-file.md> [--min 0.8]
 """
 import sys, os, re, json
 
@@ -62,12 +62,22 @@ def dim(name, score, mx, notes, fixes):
             "notes": notes, "fixes": fixes}
 
 
-def score(skill_dir):
+def score(target_path):
     dims = []
-    name_disk = os.path.basename(os.path.normpath(skill_dir))
-    md = os.path.join(skill_dir, "SKILL.md")
+    if os.path.isfile(target_path):
+        md = target_path
+        skill_dir = os.path.dirname(os.path.abspath(target_path))
+        if os.path.basename(md).lower() == "skill.md":
+            name_disk = os.path.basename(os.path.normpath(skill_dir))
+        else:
+            name_disk = os.path.splitext(os.path.basename(md))[0]
+    else:
+        skill_dir = target_path
+        name_disk = os.path.basename(os.path.normpath(skill_dir))
+        md = os.path.join(skill_dir, "SKILL.md")
+
     if not os.path.isfile(md):
-        return [dim("structure", 0, 2, ["SKILL.md missing"], ["Add a SKILL.md file"])], {}
+        return [dim("structure", 0, 2, [f"{os.path.basename(md)} missing"], [f"Add a {os.path.basename(md)} file"])], {}
     text = open(md, encoding="utf-8").read()
     fm, body = parse_frontmatter(text)
     fm = fm or {}
@@ -180,10 +190,10 @@ def main(argv):
             pos.append(a)
         i += 1
     if len(pos) != 1:
-        log("usage: score_skill.py <path/to/skill-dir> [--min 0.8]"); return 2
+        log("usage: score_skill.py <path/to/skill-dir-or-file.md> [--min 0.8]"); return 2
     d = pos[0]
-    if not os.path.isdir(d):
-        log(f"error: not a directory: {d}"); return 2
+    if not os.path.exists(d):
+        log(f"error: not found: {d}"); return 2
 
     log(f"scoring {d} …")
     dims, tot = score(d)
