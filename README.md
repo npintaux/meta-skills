@@ -120,6 +120,7 @@ meta-skills/                          # the Antigravity plugin
     │   ├── evals/trigger_evals.json                      # committed should-/should-NOT-trigger set
     │   ├── references/description-and-eval-cookbook.md   # description patterns + eval method
     │   └── scripts/
+    │       ├── new_skill.py                              # scaffolds a full spec-compliant skill skeleton
     │       ├── new_evals.py                              # scaffolds evals/trigger_evals.json
     │       └── validate_skill.py                         # non-interactive validator (incl. eval gate)
     └── skill-evaluator/

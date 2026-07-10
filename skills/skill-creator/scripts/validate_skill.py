@@ -18,6 +18,10 @@ import sys, os, re, json
 NAME_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 RESERVED = ("anthropic", "claude")
 MAX_NAME, MAX_DESC, MAX_LINES = 64, 1024, 500
+# An absolute path (POSIX /… , Windows C:\… , or UNC \\…) that reaches into a bundled dir.
+# Matches /home/x/…/scripts/, C:\Users\x\…\assets\, /root/…/references/ — but NOT relative
+# `scripts/x.py` nor `~/.claude/skills/…` (a conventional, portable-enough install location).
+ABS_BUNDLED_RE = re.compile(r"""(?:/|[A-Za-z]:[\\/]|\\\\)[^\s"'`)]*[\\/](?:scripts|references|assets)[\\/]""")
 
 
 def log(msg):
@@ -97,6 +101,18 @@ def validate(skill_dir):
     nlines = body.count("\n") + 1
     if nlines > MAX_LINES:
         errors.append(f"SKILL.md body is {nlines} lines (> {MAX_LINES}): move detail into references/ and link to it")
+
+    # ---- structure: the skill's acceptance criteria (aligned with score_skill.py) ----
+    if not re.search(r"(?im)^#+\s*when to use", body):
+        warnings.append("no '## When to Use' section — state triggers + exclusions in the body, not only the description")
+    if not (re.search(r"(?im)^#+\s*verification", body) or re.search(r"- \[ \]", body)):
+        warnings.append("no Verification checklist — add the output acceptance criteria as an evidence-based '- [ ]' list")
+
+    # ---- portability: an ABSOLUTE path to a bundled asset breaks the skill on every other
+    # machine and install dir. Key on the anti-pattern (absolute → scripts/|references/|assets/),
+    # not on the home-dir prefix, which varies by login and OS (/home, /Users, C:\Users, /root…).
+    if re.search(ABS_BUNDLED_RE, body):
+        warnings.append("absolute path to a bundled file (…/scripts|references|assets/…) — reference it relative to the skill dir, e.g. scripts/x.py")
 
     # ---- trigger evals (the quality artifact that separates a skill from a scaffold) ----
     n_trigger, n_notrigger, n_real = check_evals(skill_dir, errors, warnings)

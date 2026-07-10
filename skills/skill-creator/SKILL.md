@@ -39,6 +39,12 @@ table + red flags; wrong-shaped output needs a positive recipe; fragile sequence
 Do not default everything to prose.
 
 ### 3. Scaffold the folder
+Generate a spec-compliant skeleton — the required sections come pre-wired so you never forget them:
+```
+python scripts/new_skill.py your-skill-name --dir path/to/parent
+```
+This writes the tree below with a `SKILL.md` that already has `## When to Use` + `## Verification`
+(the acceptance criteria) and an `evals/` set, all as TODOs to fill in the next steps.
 ```
 your-skill-name/
 ├── SKILL.md          # required — frontmatter + lean body
@@ -64,6 +70,14 @@ Two required fields, nothing else needed:
   `Verify the system works`. Show templates/output as literal blocks (models pattern-match structure).
 - Give **one default path** ("defaults, not menus"); mention alternatives only as a fallback.
 - Explain the *why* for judgement calls; reserve rigid commands for genuinely fragile steps.
+- **Always include a `## When to Use` and a `## Verification` section.** Verification is the skill's
+  **acceptance criteria**: an objective, checkable exit list (`row count matches`, `output is valid
+  JSON`), not a hand-wavy "it works". The validator and the evaluator both require these.
+- **Reference bundled scripts by a path relative to the skill** (`scripts/x.py`), never an absolute
+  one — the home dir varies by login and OS (`/home/…`, `/Users/…`, `C:\Users\…`) and the install dir
+  varies by vendor (`.claude/` vs `.agents/` vs `.gemini/`). Inside a script, resolve its own location
+  at runtime (`Path(__file__).resolve().parent`); for a real home dir use `os.path.expanduser("~")`,
+  never a literal login name.
 
 ### 6. Build a trigger-evaluation set (and commit it)
 Scaffold the eval file, then fill it with real queries — a committed eval set is what makes a skill
@@ -118,6 +132,8 @@ Stop and rework if you notice:
 - there are no should-NOT-trigger test cases (you've only proven it *can* fire, not that it won't over-fire);
 - the skill changes nothing versus baseline;
 - a bundled script prompts interactively, prints logs to stdout, or has no error message on failure;
+- there is no `## Verification` section — the skill has no acceptance criteria to ship against;
+- a bundled file is referenced by an absolute path (`…/scripts/…`, any home dir or drive) instead of relative;
 - the `name` doesn't match the folder, or contains `anthropic`/`claude`.
 
 ## Verification
@@ -136,5 +152,6 @@ Ship only when every box is checked (evidence, not assumptions):
 - `references/description-and-eval-cookbook.md` — description patterns, the trigger-eval method
   (train/val split), the `trigger_evals.json` schema, baseline testing, and the form-to-failure
   table. Read it at steps 4, 6, and 7.
-- `scripts/new_evals.py` — scaffolds `evals/trigger_evals.json` (non-interactive; `--force` to overwrite).
+- `scripts/new_skill.py` — scaffolds a full spec-compliant skill skeleton (SKILL.md + required sections + evals/).
+- `scripts/new_evals.py` — scaffolds just `evals/trigger_evals.json` (non-interactive; `--force` to overwrite).
 - `scripts/validate_skill.py` — non-interactive structural + best-practice validator (incl. the eval-set gate).
