@@ -161,6 +161,11 @@ def score(target_path):
                 n = min(n, 1); notes.append(f"{os.path.basename(sp)} may mix logs into stdout"); fixes.append("Route data→stdout, logs→stderr")
     else:
         notes.append("no scripts (fine for prose-only skills)")
+    # Absolute path into a bundled dir = non-portable. Key on the anti-pattern, not the home
+    # prefix (which varies by login/OS: /home, /Users, C:\Users, /root, …).
+    if re.search(r"""(?:/|[A-Za-z]:[\\/]|\\\\)[^\s"'`)]*[\\/](?:scripts|references|assets)[\\/]""", body):
+        n = min(n, 1); notes.append("absolute path to a bundled file (breaks portability)")
+        fixes.append("Reference bundled files relative to the skill dir (e.g. scripts/x.py)")
     dims.append(dim("script_hygiene", n, 2, notes, fixes))
 
     # 7. Trigger-eval coverage (max 2) — is the quality work a committed artifact?
