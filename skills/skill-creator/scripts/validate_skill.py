@@ -87,22 +87,61 @@ def validate(skill_dir):
         low = desc.lower()
         if low.startswith(("i ", "i'", "we ", "you ", "this skill")):
             warnings.append("description: prefer third person (e.g. 'Generates…', 'Extracts…') over I/we/you/'this skill'")
+        # A description with no WHEN/trigger is the #1 reason skills never fire — hard error.
         if not re.search(r"\b(use when|use this|when the|when a|when you|for )\b", low):
-            warnings.append("description: state WHEN to use the skill (triggers), not only what it does")
+            errors.append("description: state WHEN to use the skill (triggers), not only what it does")
         if len(desc) < 40:
             warnings.append("description: very short — add concrete trigger keywords a user would actually type")
 
     # ---- body size (progressive disclosure) ----
     nlines = body.count("\n") + 1
     if nlines > MAX_LINES:
-        warnings.append(f"SKILL.md body is {nlines} lines (> {MAX_LINES}): move detail into references/ and link to it")
+        errors.append(f"SKILL.md body is {nlines} lines (> {MAX_LINES}): move detail into references/ and link to it")
+
+    # ---- trigger evals (the quality artifact that separates a skill from a scaffold) ----
+    n_trigger, n_notrigger, n_real = check_evals(skill_dir, errors, warnings)
 
     # ---- bundled dirs ----
-    present = [d for d in ("scripts", "references", "assets") if os.path.isdir(os.path.join(skill_dir, d))]
+    present = [d for d in ("scripts", "references", "assets", "evals") if os.path.isdir(os.path.join(skill_dir, d))]
 
     facts = {"name": name, "description_chars": len(desc) if desc else 0,
-             "body_lines": nlines, "bundled_dirs": present}
+             "body_lines": nlines, "bundled_dirs": present,
+             "evals": {"trigger": n_trigger, "no_trigger": n_notrigger, "real_queries": n_real}}
     return errors, warnings, facts
+
+
+def check_evals(skill_dir, errors, warnings):
+    """Inspect evals/trigger_evals.json. Missing file → warning (fails under --strict).
+    Present but with no should-NOT-trigger case → hard error (the documented Red Flag).
+    Returns (n_trigger, n_no_trigger, n_real). Placeholder TODO rows do not count."""
+    path = os.path.join(skill_dir, "evals", "trigger_evals.json")
+    if not os.path.isfile(path):
+        warnings.append("no evals/trigger_evals.json — scaffold it with scripts/new_evals.py, then fill real queries (required under --strict)")
+        return 0, 0, 0
+    try:
+        with open(path, encoding="utf-8") as fh:
+            data = json.load(fh)
+    except Exception as e:
+        errors.append(f"evals/trigger_evals.json: invalid JSON ({e})")
+        return 0, 0, 0
+    queries = data.get("queries") if isinstance(data, dict) else data
+    if not isinstance(queries, list):
+        errors.append('evals/trigger_evals.json: expected a list of queries or {"queries": [...]}')
+        return 0, 0, 0
+    real = [q for q in queries if isinstance(q, dict)
+            and not str(q.get("query", "")).strip().upper().startswith("TODO")]
+    n_trigger = sum(1 for q in real if str(q.get("expect", "")).lower() == "trigger")
+    n_notrigger = sum(1 for q in real if str(q.get("expect", "")).lower() in ("no-trigger", "no_trigger"))
+    if not real:
+        errors.append("evals/trigger_evals.json: only TODO placeholders — replace them with real queries")
+    else:
+        if not n_trigger:
+            errors.append("evals: no should-trigger queries (expect: trigger)")
+        if not n_notrigger:
+            errors.append("evals: no should-NOT-trigger queries (expect: no-trigger) — you've only proven it can fire, not that it won't over-fire")
+        if len(real) < 6:
+            warnings.append(f"evals: only {len(real)} real queries; aim for ~15-20 (8-10 per side)")
+    return n_trigger, n_notrigger, len(real)
 
 
 def main(argv):

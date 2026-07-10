@@ -44,6 +44,7 @@ your-skill-name/
 ├── SKILL.md          # required — frontmatter + lean body
 ├── scripts/          # optional — deterministic, non-interactive helpers
 ├── references/       # optional — deep docs, loaded on demand
+├── evals/            # recommended — trigger_evals.json, the committed eval set
 └── assets/           # optional — templates / files the skill emits
 ```
 The folder name **must** equal the frontmatter `name`.
@@ -64,11 +65,17 @@ Two required fields, nothing else needed:
 - Give **one default path** ("defaults, not menus"); mention alternatives only as a fallback.
 - Explain the *why* for judgement calls; reserve rigid commands for genuinely fragile steps.
 
-### 6. Build a trigger-evaluation set
-Generate ~15–20 realistic queries split into **should-trigger** and **should-NOT-trigger** (near-misses
-with overlapping keywords but different goals). Keep a train/validation split so you don't overfit the
-description to one phrasing. Target: should-trigger > 50% activation, near-miss < 50%, over 3 runs each.
-Full method: `references/description-and-eval-cookbook.md` §2.
+### 6. Build a trigger-evaluation set (and commit it)
+Scaffold the eval file, then fill it with real queries — a committed eval set is what makes a skill
+*measured* rather than guessed, and it's what the validator checks in step 8:
+```
+python scripts/new_evals.py path/to/your-skill        # writes evals/trigger_evals.json
+```
+Replace the TODO placeholders with ~15–20 realistic queries split into **should-trigger** and
+**should-NOT-trigger** (near-misses with overlapping keywords but different goals — these are
+mandatory, not optional). Keep a train/validation split so you don't overfit the description to one
+phrasing. Then run each query 3× in fresh sessions — target should-trigger > 50% activation,
+near-miss < 50%. Full method + file schema: `references/description-and-eval-cookbook.md` §2.
 
 ### 7. Test behaviour vs. baseline
 Run 2–3 realistic prompts **without** the skill (baseline) and **with** it. The skill earns its place
@@ -81,8 +88,10 @@ Run the bundled validator before shipping:
 ```
 python scripts/validate_skill.py path/to/your-skill --strict
 ```
-It checks the frontmatter rules, reserved words, description quality, and body size, and prints a JSON
+It checks the frontmatter rules, reserved words, description quality, body size, **and that a real
+`evals/trigger_evals.json` exists with at least one should-NOT-trigger case** — it prints a JSON
 verdict (data → stdout, logs → stderr, non-zero exit on failure). Fix every ERROR; resolve warnings.
+Under `--strict` a missing eval set is itself an error: a skill you never tested doesn't ship.
 
 ### 9. Install for Antigravity / Gemini CLI
 Drop the folder into a skills directory and reload:
@@ -118,11 +127,14 @@ Ship only when every box is checked (evidence, not assumptions):
 - [ ] `SKILL.md` body is under 500 lines; deep material lives in `references/`
 - [ ] Steps are concrete and actionable; one default path, not a menu
 - [ ] Bundled scripts are non-interactive, declare deps inline, and route data→stdout / logs→stderr
+- [ ] `evals/trigger_evals.json` is committed, with real should-trigger **and** should-NOT-trigger queries
 - [ ] Trigger eval run: should-trigger > 50%, should-NOT-trigger < 50% on a held-out set
 - [ ] Behaviour differs from baseline on at least one realistic prompt
 - [ ] `python scripts/validate_skill.py <dir> --strict` exits 0
 
 ## Reference files
 - `references/description-and-eval-cookbook.md` — description patterns, the trigger-eval method
-  (train/val split), baseline testing, and the form-to-failure table. Read it at steps 4, 6, and 7.
-- `scripts/validate_skill.py` — non-interactive structural + best-practice validator.
+  (train/val split), the `trigger_evals.json` schema, baseline testing, and the form-to-failure
+  table. Read it at steps 4, 6, and 7.
+- `scripts/new_evals.py` — scaffolds `evals/trigger_evals.json` (non-interactive; `--force` to overwrite).
+- `scripts/validate_skill.py` — non-interactive structural + best-practice validator (incl. the eval-set gate).

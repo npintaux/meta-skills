@@ -1,0 +1,21 @@
+{
+  "skill": "skill-evaluator",
+  "queries": [
+    { "query": "review this skill and tell me what to fix", "expect": "trigger" },
+    { "query": "grade my SKILL.md, is it ready to ship", "expect": "trigger" },
+    { "query": "lint this skill for best-practice problems", "expect": "trigger" },
+    { "query": "why does my skill trigger on the wrong requests", "expect": "trigger" },
+    { "query": "score the pdf-extractor skill against the rubric", "expect": "trigger" },
+    { "query": "audit this skill folder and give it a grade", "expect": "trigger" },
+    { "query": "compare these two versions of my skill and tell me which is better", "expect": "trigger" },
+    { "query": "quality-check the skill in .agents/skills/db-log-parser", "expect": "trigger" },
+    { "query": "is my skill's description good enough to make it fire", "expect": "trigger" },
+    { "query": "create a new skill for parsing db logs", "expect": "no-trigger", "note": "authoring, that's skill-creator" },
+    { "query": "write the SKILL.md frontmatter for me", "expect": "no-trigger", "note": "authoring, not evaluation" },
+    { "query": "review my python pull request", "expect": "no-trigger", "note": "code review of app code, not a skill" },
+    { "query": "run the test suite and report failures", "expect": "no-trigger", "note": "generic testing, not skill evaluation" },
+    { "query": "grade this student essay", "expect": "no-trigger", "note": "shares 'grade' keyword, unrelated domain" },
+    { "query": "explain how skills are loaded by the agent", "expect": "no-trigger", "note": "conceptual question, no skill to evaluate" },
+    { "query": "install this skill into my project", "expect": "no-trigger", "note": "installation, not evaluation" }
+  ]
+}
