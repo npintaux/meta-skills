@@ -34,7 +34,7 @@ Antigravity loads plugins from its plugins directory. Clone this repo into it as
 
 ```bash
 git clone https://github.com/npintaux/meta-skills.git \
-  ~/.gemini/antigravity-cli/plugins/meta-skills
+  ~/.gemini/config/plugins/meta-skills
 ```
 
 Then reload (or restart Antigravity) and confirm the skills are present:
