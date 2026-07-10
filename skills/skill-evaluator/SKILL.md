@@ -91,4 +91,4 @@ Deliver the evaluation only when:
 
 ## Reference files
 - `scripts/score_skill.py` — static rubric scorer (non-interactive, JSON on stdout).
-- `references/rubric.md` — the six-dimension rubric, grade bands, and the dynamic-evaluation method.
+- `references/rubric.md` — the seven-dimension rubric, grade bands, and the dynamic-evaluation method.
