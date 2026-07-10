@@ -52,6 +52,28 @@ Generate ~15–20 realistic queries, split into two halves:
 When a should-trigger query fails, fix the **category** (add the missing kind of phrasing), not the
 one literal string — otherwise you overfit and break on the next paraphrase.
 
+### Commit the set as `evals/trigger_evals.json`
+The eval set is an **artifact**, not a throwaway you rebuild each session. Scaffold it with
+`scripts/new_evals.py <skill-dir>`, then fill it in. Schema (parsed by `validate_skill.py` and
+`score_skill.py`, both dependency-free):
+
+```json
+{
+  "skill": "your-skill-name",
+  "queries": [
+    { "query": "turn this workflow into a skill",        "expect": "trigger" },
+    { "query": "why does my skill never activate",        "expect": "trigger" },
+    { "query": "write a bash script to rename files",     "expect": "no-trigger", "note": "scripting, not skill authoring" }
+  ]
+}
+```
+
+Rules the validator enforces: at least one `trigger` **and** one `no-trigger` entry (a set with no
+near-misses only proves the skill *can* fire, never that it won't over-fire); `TODO` placeholder rows
+don't count as real queries. The scorer's `trigger_eval_coverage` dimension awards full marks at
+~10+ real queries with both sides present. Running the queries stays agent-driven — no script can
+spawn the fresh sessions trigger-testing needs; the files only prove the set *exists and is shaped right*.
+
 ---
 
 ## 3. Baseline-vs-with-skill behavioural test

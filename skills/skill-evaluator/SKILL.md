@@ -24,7 +24,8 @@ create → evaluate → improve.)
 
 ## Inputs
 - **Required:** a path to the skill directory to evaluate (the folder containing `SKILL.md`), or a direct path to a standalone `.md` file.
-- **Optional:** a pass threshold (default grade B / ratio 0.8), and any existing eval prompts.
+- **Optional:** a pass threshold (default grade B / ratio 0.8), and any existing eval prompts. If the
+  skill has a committed `evals/trigger_evals.json`, reuse it for the dynamic trigger test.
 
 ## Core Process
 
@@ -37,9 +38,10 @@ of `scripts/`, `references/`, `assets/` exist (if evaluating a directory).
 python scripts/score_skill.py <path/to/skill-dir-or-file.md> --min 0.8
 ```
 This is read-only and non-interactive. It prints a JSON report (data on stdout, logs on stderr) with
-a 0–2 score on six dimensions — frontmatter validity, description trigger quality, progressive
-disclosure/size, body concreteness, structure completeness, script hygiene — plus an overall grade
-and priority fixes. Capture the JSON. Dimension definitions: `references/rubric.md`.
+a 0–2 score on seven dimensions — frontmatter validity, description trigger quality, progressive
+disclosure/size, body concreteness, structure completeness, script hygiene, and trigger-eval
+coverage (is `evals/trigger_evals.json` present and shaped right) — plus an overall grade and
+priority fixes. Capture the JSON. Dimension definitions: `references/rubric.md`.
 
 ### 3. Read the static findings critically
 The scorer uses heuristics, so confirm each flag by eye:
@@ -50,8 +52,9 @@ The scorer uses heuristics, so confirm each flag by eye:
 
 ### 4. Run the dynamic evaluation (the part the script can't)
 A high static score means "no obvious smell," not "proven good." Verify behaviour:
-- **Trigger accuracy** — build ~15–20 labelled queries (should-trigger / should-NOT-trigger), run
-  each 3× in fresh sessions, measure activation. Pass: should-trigger > 50%, near-miss < 50%.
+- **Trigger accuracy** — if the skill ships `evals/trigger_evals.json`, run *those* committed queries
+  (don't reinvent them); otherwise build ~15–20 labelled queries (should-trigger / should-NOT-trigger).
+  Run each 3× in fresh sessions, measure activation. Pass: should-trigger > 50%, near-miss < 50%.
 - **Behaviour vs baseline** — run 2–3 realistic prompts with and without the skill; the skill earns
   its place only if it changes output, step count, or tokens. Grade on objective assertions.
 - **Failure-mode probe** — pressure-test the excuses an agent makes to skip steps; confirm the

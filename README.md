@@ -6,18 +6,22 @@ Claude Code, the Claude API, and OpenAI Codex.
 
 | Skill | What it does |
 |-------|--------------|
-| **`skill-creator`** | Turns a repetitive workflow into a *correct, well-triggering, lean* skill — not just a valid folder. Walks you through interview → a proper what-plus-when description → progressive disclosure → an eval/trigger loop → validation before shipping. |
-| **`skill-evaluator`** | Grades an existing skill. Runs a 6-dimension static rubric (frontmatter, description trigger quality, progressive disclosure, body concreteness, structure, script hygiene) for an A–F score, then drives the dynamic checks a script can't do: does it actually trigger, and does it change the agent's behaviour versus no skill? |
+| **`skill-creator`** | Turns a repetitive workflow into a *correct, well-triggering, lean* skill — not just a valid folder. Walks you through interview → a proper what-plus-when description → progressive disclosure → an eval/trigger loop → validation before shipping. It emits a **committed eval set** (`evals/trigger_evals.json`) so the trigger tests are an artifact, not a throwaway. |
+| **`skill-evaluator`** | Grades an existing skill. Runs a 7-dimension static rubric (frontmatter, description trigger quality, progressive disclosure, body concreteness, structure, script hygiene, trigger-eval coverage) for an A–F score, then drives the dynamic checks a script can't do: does it actually trigger, and does it change the agent's behaviour versus no skill? |
 
 ## Why these exist
 
 Most "skill creator" tooling is a **scaffolder**: it
 generates the folder and frontmatter *syntax*, but not a *good* skill — the quality guidance lives in
 a separate docs page the tool doesn't enforce. Antigravity ships no skill-authoring meta-skill at all.
-These two close that gap by baking the authoring best practices into the skills themselves.
+These two close that gap by baking the authoring best practices into the skills themselves — and by
+making the one thing that truly separates a skill from a scaffold, the **trigger-eval set**, a
+*hard gate*: `validate_skill.py` fails a skill that has no committed `evals/trigger_evals.json` with
+at least one should-NOT-trigger case, and the scorer weights it as a rubric dimension. Quality is
+enforced, not merely recommended.
 
 Both are self-contained, dependency-free, and portable. They also dogfood each other: run through one
-another, each scores an **A**.
+another, each scores an **A** (14/14).
 
 ## Install in Antigravity
 
@@ -113,11 +117,15 @@ meta-skills/                          # the Antigravity plugin
 └── skills/                           # skills MUST live here for plugin discovery
     ├── skill-creator/
     │   ├── SKILL.md
+    │   ├── evals/trigger_evals.json                      # committed should-/should-NOT-trigger set
     │   ├── references/description-and-eval-cookbook.md   # description patterns + eval method
-    │   └── scripts/validate_skill.py                     # non-interactive validator
+    │   └── scripts/
+    │       ├── new_evals.py                              # scaffolds evals/trigger_evals.json
+    │       └── validate_skill.py                         # non-interactive validator (incl. eval gate)
     └── skill-evaluator/
         ├── SKILL.md
-        ├── references/rubric.md                           # the 6-dimension rubric + dynamic checks
+        ├── evals/trigger_evals.json                      # committed should-/should-NOT-trigger set
+        ├── references/rubric.md                           # the 7-dimension rubric + dynamic checks
         └── scripts/score_skill.py                         # non-interactive rubric scorer
 ```
 

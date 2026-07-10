@@ -3,7 +3,7 @@
 The reference the `skill-evaluator` skill uses. Two halves: a **static** rubric (scored by
 `scripts/score_skill.py`) and a **dynamic** evaluation (run by the agent, needs a live model).
 
-## Static rubric — 6 dimensions, 0–2 each (max 12)
+## Static rubric — 7 dimensions, 0–2 each (max 14)
 | Dimension | 2 (good) | 1 (weak) | 0 (broken) |
 |---|---|---|---|
 | Frontmatter validity | name kebab-case ≤64, matches folder, no reserved words; description ≤1024 | minor: name≠folder, >64, desc>1024 | name/description missing or illegal chars / reserved word |
@@ -12,6 +12,7 @@ The reference the `skill-evaluator` skill uses. Two halves: a **static** rubric 
 | Body concreteness | numbered actionable steps, no vague verbs, one default path | some vagueness or menu-like | no step structure |
 | Structure completeness | has When-to-Use + Verification | missing one | missing both |
 | Script hygiene | non-interactive, data→stdout/logs→stderr | may mix logs into stdout | interactive prompt (will hang) |
+| Trigger-eval coverage | committed `evals/trigger_evals.json`, ~10+ real queries, both should-/should-NOT-trigger | thin set (<10) or one side missing | no eval set (or only TODO placeholders) |
 
 Grade: A ≥0.9 · B ≥0.8 · C ≥0.7 · D ≥0.6 · F <0.6. Default pass threshold = 0.8 (B).
 

@@ -163,6 +163,37 @@ def score(target_path):
         notes.append("no scripts (fine for prose-only skills)")
     dims.append(dim("script_hygiene", n, 2, notes, fixes))
 
+    # 7. Trigger-eval coverage (max 2) — is the quality work a committed artifact?
+    n, notes, fixes = 2, [], []
+    ev_path = os.path.join(skill_dir, "evals", "trigger_evals.json")
+    if not os.path.isfile(ev_path):
+        n = 0; notes.append("no evals/trigger_evals.json")
+        fixes.append("Scaffold evals with skill-creator's new_evals.py, then fill real queries")
+    else:
+        try:
+            ev = json.load(open(ev_path, encoding="utf-8"))
+            qs = ev.get("queries") if isinstance(ev, dict) else ev
+            qs = qs if isinstance(qs, list) else []
+        except Exception:
+            qs = None
+        if qs is None:
+            n = 0; notes.append("evals/trigger_evals.json is not valid JSON"); fixes.append("Fix the JSON")
+        else:
+            real = [q for q in qs if isinstance(q, dict)
+                    and not str(q.get("query", "")).strip().upper().startswith("TODO")]
+            trig = sum(1 for q in real if str(q.get("expect", "")).lower() == "trigger")
+            notrig = sum(1 for q in real if str(q.get("expect", "")).lower() in ("no-trigger", "no_trigger"))
+            if not real:
+                n = 0; notes.append("evals are only TODO placeholders"); fixes.append("Write real should-trigger / should-NOT-trigger queries")
+            else:
+                if notrig == 0:
+                    n = min(n, 1); notes.append("no should-NOT-trigger cases"); fixes.append("Add near-miss queries that must NOT fire")
+                if trig == 0:
+                    n = min(n, 1); notes.append("no should-trigger cases"); fixes.append("Add colloquial queries that must fire")
+                if len(real) < 10:
+                    n = min(n, 1); notes.append(f"thin eval set ({len(real)} queries)"); fixes.append("Aim for ~15-20 queries, 8-10 per side")
+    dims.append(dim("trigger_eval_coverage", n, 2, notes, fixes))
+
     got = sum(d["score"] for d in dims)
     mx = sum(d["max"] for d in dims)
     return dims, {"got": got, "max": mx, "ratio": round(got / mx, 3)}
