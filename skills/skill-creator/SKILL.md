@@ -56,7 +56,7 @@ your-skill-name/
 The folder name **must** equal the frontmatter `name`.
 
 ### 4. Write the frontmatter (the load-bearing step)
-Two required fields, nothing else needed:
+Two fields are required (`name`, `description`); optional engine fields (`allowed-tools`, `disable-model-invocation`, `compatibility`) are supported when needed:
 - **`name`** — lowercase letters/numbers/hyphens, ≤ 64 chars, matches the folder, and must **not**
   contain the words `anthropic` or `claude`.
 - **`description`** — third person, ≤ 1024 chars, no XML tags, and carries **both what it does AND
@@ -85,9 +85,9 @@ Scaffold the eval file, then fill it with real queries — a committed eval set 
 ```
 python scripts/new_evals.py path/to/your-skill        # writes evals/trigger_evals.json
 ```
-Replace the TODO placeholders with ~15–20 realistic queries split into **should-trigger** and
-**should-NOT-trigger** (near-misses with overlapping keywords but different goals — these are
-mandatory, not optional). Keep a train/validation split so you don't overfit the description to one
+Replace the TODO placeholders with ~16–20 realistic queries covering the **4 quadrants** (8–10 per side):
+Q1 (direct triggers), Q2 (colloquial triggers), Q3 (keyword near-misses that must not fire),
+and Q4 (sibling/adjacent tasks). Keep a train/validation split so you don't overfit the description to one
 phrasing. Then run each query 3× in fresh sessions — target should-trigger > 50% activation,
 near-miss < 50%. Full method + file schema: `references/description-and-eval-cookbook.md` §2.
 
@@ -101,6 +101,8 @@ failing test first."
 Run the bundled validator before shipping:
 ```
 python scripts/validate_skill.py path/to/your-skill --strict
+# Or audit an entire multi-skill workspace for trigger collisions:
+python scripts/validate_skill.py --audit-workspace path/to/workspace [--strict] [--fail-on-collision]
 ```
 It checks the frontmatter rules, reserved words, description quality, body size, **and that a real
 `evals/trigger_evals.json` exists with at least one should-NOT-trigger case** — it prints a JSON
