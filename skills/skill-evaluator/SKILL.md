@@ -53,7 +53,7 @@ The scorer uses heuristics, so confirm each flag by eye:
 ### 4. Run the dynamic evaluation (the part the script can't)
 A high static score means "no obvious smell," not "proven good." Verify behaviour:
 - **Trigger accuracy** — if the skill ships `evals/trigger_evals.json`, run *those* committed queries
-  (don't reinvent them); otherwise build ~15–20 labelled queries (should-trigger / should-NOT-trigger).
+  (don't reinvent them); otherwise build ~16–20 labelled queries (should-trigger / should-NOT-trigger).
   Run each 3× in fresh sessions, measure activation. Pass: should-trigger > 50%, near-miss < 50%.
 - **Behaviour vs baseline** — run 2–3 realistic prompts with and without the skill; the skill earns
   its place only if it changes output, step count, or tokens. Grade on objective assertions.

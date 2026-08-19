@@ -60,7 +60,8 @@ TODO ...
 ## Red Flags
 Stop and rework if you notice:
 - TODO a corner an agent would cut here;
-- hardcoded absolute paths (use paths relative to the skill dir, e.g. `scripts/x.py`).
+- hardcoded absolute paths (use paths relative to the skill dir, e.g. `scripts/x.py`);
+- scripts missing PEP 723 inline dependency metadata (`# /// script ... # ///`).
 
 ## Verification
 Ship only when every box is checked (evidence, not assumptions):
@@ -73,15 +74,52 @@ Ship only when every box is checked (evidence, not assumptions):
 def evals_json(name):
     return {
         "skill": name,
-        "_help": ("Replace every query with realistic phrasings. Aim for 15-20 total, "
-                  "8-10 'trigger' and 8-10 'no-trigger' (near-misses). Run each 3x in "
-                  "fresh sessions. See references/description-and-eval-cookbook.md sec 2."),
+        "_help": (
+            "Replace every query below with realistic phrasings across all 4 quadrants. "
+            "Aim for 16-20 total (8-10 'trigger' and 8-10 'no-trigger'). "
+            "Q1 = direct trigger, Q2 = colloquial trigger, Q3 = keyword near-miss, Q4 = sibling skill/adjacent task. "
+            "Keep a 60/40 train/validation split. See references/description-and-eval-cookbook.md sec 2."
+        ),
         "queries": [
-            {"query": "TODO: a colloquial way a user asks for this skill", "expect": "trigger"},
-            {"query": "TODO: another phrasing, same goal", "expect": "trigger"},
-            {"query": "TODO: a near-miss that shares keywords but wants something else",
-             "expect": "no-trigger", "note": "why this must NOT fire"},
-        ],
+            {
+                "quadrant": "Q1_direct",
+                "query": "TODO: [Q1 Direct] canonical phrasing directly requesting this skill",
+                "expect": "trigger",
+                "split": "train"
+            },
+            {
+                "quadrant": "Q1_direct",
+                "query": "TODO: [Q1 Direct] another direct phrasing for held-out validation",
+                "expect": "trigger",
+                "split": "val"
+            },
+            {
+                "quadrant": "Q2_colloquial",
+                "query": "TODO: [Q2 Colloquial] indirect / conversational phrasing, different words, same goal",
+                "expect": "trigger",
+                "split": "train"
+            },
+            {
+                "quadrant": "Q2_colloquial",
+                "query": "TODO: [Q2 Colloquial] conversational phrasing for held-out validation",
+                "expect": "trigger",
+                "split": "val"
+            },
+            {
+                "quadrant": "Q3_near_miss",
+                "query": "TODO: [Q3 Near-Miss] shares trigger keywords but has a completely different intent",
+                "expect": "no-trigger",
+                "note": "why this must NOT fire (intent is different despite keyword overlap)",
+                "split": "train"
+            },
+            {
+                "quadrant": "Q4_sibling_adjacent",
+                "query": "TODO: [Q4 Sibling/Adjacent] closely related task that belongs to another skill or base agent",
+                "expect": "no-trigger",
+                "note": "why this must NOT fire (handled by sibling skill or base agent)",
+                "split": "val"
+            }
+        ]
     }
 
 

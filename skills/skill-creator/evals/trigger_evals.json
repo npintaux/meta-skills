@@ -1,21 +1,108 @@
 {
   "skill": "skill-creator",
   "queries": [
-    { "query": "make a skill for converting our changelog into release notes", "expect": "trigger" },
-    { "query": "turn this repetitive workflow into a reusable skill", "expect": "trigger" },
-    { "query": "my skill never activates, can you fix it", "expect": "trigger" },
-    { "query": "write a SKILL.md for extracting tables from PDFs", "expect": "trigger" },
-    { "query": "the description on my skill is bad, help me rewrite it so it triggers", "expect": "trigger" },
-    { "query": "audit this skill and shorten it, it's way too long", "expect": "trigger" },
-    { "query": "package the steps I always do before a deploy as an agent skill", "expect": "trigger" },
-    { "query": "how do I author a skill that works in Antigravity and Gemini CLI", "expect": "trigger" },
-    { "query": "scaffold a new skill called db-log-parser", "expect": "trigger" },
-    { "query": "write a python function to parse a changelog", "expect": "no-trigger", "note": "ordinary app code, not skill authoring" },
-    { "query": "add a rule to AGENTS.md so the agent always runs the linter", "expect": "no-trigger", "note": "always-on memory file, not a skill" },
-    { "query": "review my pull request for bugs", "expect": "no-trigger", "note": "code review, not skill work" },
-    { "query": "generate release notes from this changelog", "expect": "no-trigger", "note": "wants the output, not a skill that makes it" },
-    { "query": "what is an agent skill and how does the loader pick one", "expect": "no-trigger", "note": "conceptual question, no authoring task" },
-    { "query": "install the pdf skill into my project", "expect": "no-trigger", "note": "installation, not creation" },
-    { "query": "write a one-off prompt to summarize this file", "expect": "no-trigger", "note": "one-off prompt, explicitly out of scope" }
+    {
+      "quadrant": "Q1_direct",
+      "query": "make a skill for converting our changelog into release notes",
+      "expect": "trigger",
+      "split": "train"
+    },
+    {
+      "quadrant": "Q1_direct",
+      "query": "turn this repetitive workflow into a reusable skill",
+      "expect": "trigger",
+      "split": "train"
+    },
+    {
+      "quadrant": "Q1_direct",
+      "query": "write a SKILL.md for extracting tables from PDFs",
+      "expect": "trigger",
+      "split": "val"
+    },
+    {
+      "quadrant": "Q1_direct",
+      "query": "scaffold a new skill called db-log-parser",
+      "expect": "trigger",
+      "split": "train"
+    },
+    {
+      "quadrant": "Q1_direct",
+      "query": "how do I author a skill that works in Antigravity and Gemini CLI",
+      "expect": "trigger",
+      "split": "val"
+    },
+    {
+      "quadrant": "Q2_colloquial",
+      "query": "my skill never activates, can you fix it",
+      "expect": "trigger",
+      "split": "train"
+    },
+    {
+      "quadrant": "Q2_colloquial",
+      "query": "the description on my skill is bad, help me rewrite it so it triggers",
+      "expect": "trigger",
+      "split": "val"
+    },
+    {
+      "quadrant": "Q2_colloquial",
+      "query": "audit this skill and shorten it, it's way too long",
+      "expect": "trigger",
+      "split": "train"
+    },
+    {
+      "quadrant": "Q2_colloquial",
+      "query": "package the steps I always do before a deploy as an agent skill",
+      "expect": "trigger",
+      "split": "val"
+    },
+    {
+      "quadrant": "Q3_near_miss",
+      "query": "write a python function to parse a changelog",
+      "expect": "no-trigger",
+      "split": "train",
+      "note": "ordinary app code, not skill authoring"
+    },
+    {
+      "quadrant": "Q3_near_miss",
+      "query": "generate release notes from this changelog",
+      "expect": "no-trigger",
+      "split": "val",
+      "note": "wants the output, not a skill that makes it"
+    },
+    {
+      "quadrant": "Q3_near_miss",
+      "query": "write a one-off prompt to summarize this file",
+      "expect": "no-trigger",
+      "split": "train",
+      "note": "one-off prompt, explicitly out of scope"
+    },
+    {
+      "quadrant": "Q3_near_miss",
+      "query": "what is an agent skill and how does the loader pick one",
+      "expect": "no-trigger",
+      "split": "val",
+      "note": "conceptual question, no authoring task"
+    },
+    {
+      "quadrant": "Q4_sibling_adjacent",
+      "query": "add a rule to AGENTS.md so the agent always runs the linter",
+      "expect": "no-trigger",
+      "split": "train",
+      "note": "always-on memory file, not a skill"
+    },
+    {
+      "quadrant": "Q4_sibling_adjacent",
+      "query": "review my pull request for bugs",
+      "expect": "no-trigger",
+      "split": "val",
+      "note": "code review, not skill work"
+    },
+    {
+      "quadrant": "Q4_sibling_adjacent",
+      "query": "install the pdf skill into my project",
+      "expect": "no-trigger",
+      "split": "train",
+      "note": "installation, not creation"
+    }
   ]
 }

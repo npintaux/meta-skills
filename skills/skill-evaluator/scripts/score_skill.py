@@ -28,6 +28,13 @@ MENU = ("alternatively", "you could also", "another option", "or you can", "opti
 INTERACTIVE = (r"\binput\s*\(", r"\braw_input\s*\(", r"\bread\s+-r?p\b", r"\bread\s+-p\b")
 
 
+# Matches genuine absolute filesystem paths (POSIX root, Windows C:\, or UNC \\)
+# that reach into bundled directories (scripts/, references/, assets/).
+ABS_BUNDLED_RE = re.compile(
+    r"""(?:\b[A-Za-z]:[\\/]|\\\\[^\s"'`)]+[\\/]|(?:^|(?<=[^\w/:~]))/[^\s"'`)]*)[^\s"'`)]*[\\/](?:scripts|references|assets)[\\/]"""
+)
+
+
 def strip_literals(src):
     """Remove triple/single/double-quoted strings and # comments so pattern matching
     keys on code, not on string constants. Good enough for hygiene heuristics."""
@@ -51,9 +58,20 @@ def parse_frontmatter(text):
     for raw in block.splitlines():
         if re.match(r"^[A-Za-z0-9_-]+\s*:", raw):
             key, _, val = raw.partition(":")
-            fm[key.strip()] = val.strip().strip('"').strip("'")
+            key = key.strip()
+            val = val.strip()
+            if val.lower() == "true":
+                fm[key] = True
+            elif val.lower() == "false":
+                fm[key] = False
+            elif val.startswith("[") and val.endswith("]"):
+                items = [x.strip().strip('"').strip("'") for x in val[1:-1].split(",") if x.strip()]
+                fm[key] = items
+            else:
+                fm[key] = val.strip('"').strip("'")
         elif key and raw.strip():
-            fm[key] = (fm.get(key, "") + " " + raw.strip()).strip()
+            if isinstance(fm.get(key), str):
+                fm[key] = (fm.get(key, "") + " " + raw.strip()).strip()
     return fm, body
 
 
@@ -90,10 +108,13 @@ def score(target_path):
     else:
         if not NAME_RE.match(name): n = 0; notes.append(f"name '{name}' not kebab-case"); fixes.append("Use lowercase + single hyphens")
         if len(name) > 64: n = min(n, 1); notes.append("name > 64 chars")
-        if any(w in name.lower() for w in RESERVED): n = 0; notes.append("name uses reserved word"); fixes.append("Remove anthropic/claude from name")
+        segments = set(name.lower().split("-"))
+        if any(w in segments for w in RESERVED): n = 0; notes.append("name uses reserved word"); fixes.append("Remove anthropic/claude from name")
         if name != name_disk: n = min(n, 1); notes.append(f"name != folder '{name_disk}'"); fixes.append("Make name match folder")
     if not desc: n = 0; notes.append("description missing"); fixes.append("Add 'description'")
-    elif len(desc) > 1024: n = min(n, 1); notes.append("description > 1024 chars")
+    else:
+        if len(desc) > 1024: n = min(n, 1); notes.append("description > 1024 chars")
+        if re.search(r"</?[A-Za-z][^>]*>", desc): n = min(n, 1); notes.append("description contains XML/HTML tags")
     dims.append(dim("frontmatter_validity", n, 2, notes, fixes))
 
     # 2. Description trigger quality (heuristic, max 2)
@@ -101,7 +122,7 @@ def score(target_path):
     dl = desc.lower()
     if dl.startswith(("i ", "i'", "we ", "you ", "this skill")):
         n = min(n, 1); notes.append("not third person"); fixes.append("Rewrite in third person ('Generates…')")
-    if not re.search(r"\b(use when|when the|when a|when you|for )\b", dl):
+    if not re.search(r"\b(use when|use this|when |for |run with|invoke |trigger|reach for|handy for|designed to|designed for|ideal for|helps with|helps to|handles)\b", dl):
         n = min(n, 1); notes.append("no explicit WHEN/trigger"); fixes.append("State when to use it (triggers)")
     if len(desc) < 60:
         n = min(n, 1); notes.append("very short / few trigger keywords"); fixes.append("Add concrete keywords a user would type")
@@ -161,9 +182,8 @@ def score(target_path):
                 n = min(n, 1); notes.append(f"{os.path.basename(sp)} may mix logs into stdout"); fixes.append("Route data→stdout, logs→stderr")
     else:
         notes.append("no scripts (fine for prose-only skills)")
-    # Absolute path into a bundled dir = non-portable. Key on the anti-pattern, not the home
-    # prefix (which varies by login/OS: /home, /Users, C:\Users, /root, …).
-    if re.search(r"""(?:/|[A-Za-z]:[\\/]|\\\\)[^\s"'`)]*[\\/](?:scripts|references|assets)[\\/]""", body):
+    # Absolute path into a bundled dir = non-portable.
+    if re.search(ABS_BUNDLED_RE, body):
         n = min(n, 1); notes.append("absolute path to a bundled file (breaks portability)")
         fixes.append("Reference bundled files relative to the skill dir (e.g. scripts/x.py)")
     dims.append(dim("script_hygiene", n, 2, notes, fixes))
@@ -171,6 +191,7 @@ def score(target_path):
     # 7. Trigger-eval coverage (max 2) — is the quality work a committed artifact?
     n, notes, fixes = 2, [], []
     ev_path = os.path.join(skill_dir, "evals", "trigger_evals.json")
+    eval_stats = {"trigger": 0, "no_trigger": 0, "real": 0, "quadrants": {}, "splits": {}}
     if not os.path.isfile(ev_path):
         n = 0; notes.append("no evals/trigger_evals.json")
         fixes.append("Scaffold evals with skill-creator's new_evals.py, then fill real queries")
@@ -188,6 +209,23 @@ def score(target_path):
                     and not str(q.get("query", "")).strip().upper().startswith("TODO")]
             trig = sum(1 for q in real if str(q.get("expect", "")).lower() == "trigger")
             notrig = sum(1 for q in real if str(q.get("expect", "")).lower() in ("no-trigger", "no_trigger"))
+            quadrants = {}
+            splits = {}
+            for q in real:
+                quad = q.get("quadrant")
+                if quad:
+                    quadrants[str(quad)] = quadrants.get(str(quad), 0) + 1
+                sp = q.get("split")
+                if sp:
+                    splits[str(sp)] = splits.get(str(sp), 0) + 1
+
+            eval_stats = {
+                "trigger": trig,
+                "no_trigger": notrig,
+                "real": len(real),
+                "quadrants": quadrants,
+                "splits": splits
+            }
             if not real:
                 n = 0; notes.append("evals are only TODO placeholders"); fixes.append("Write real should-trigger / should-NOT-trigger queries")
             else:
@@ -196,12 +234,14 @@ def score(target_path):
                 if trig == 0:
                     n = min(n, 1); notes.append("no should-trigger cases"); fixes.append("Add colloquial queries that must fire")
                 if len(real) < 10:
-                    n = min(n, 1); notes.append(f"thin eval set ({len(real)} queries)"); fixes.append("Aim for ~15-20 queries, 8-10 per side")
+                    n = min(n, 1); notes.append(f"thin eval set ({len(real)} queries)"); fixes.append("Aim for ~16-20 queries, 8-10 per side across 4 quadrants")
+                if quadrants:
+                    notes.append(f"4-quadrant format ({len(quadrants)} quadrants)")
     dims.append(dim("trigger_eval_coverage", n, 2, notes, fixes))
 
     got = sum(d["score"] for d in dims)
     mx = sum(d["max"] for d in dims)
-    return dims, {"got": got, "max": mx, "ratio": round(got / mx, 3)}
+    return dims, {"got": got, "max": mx, "ratio": round(got / mx, 3), "eval_stats": eval_stats}
 
 
 def grade(ratio):

@@ -105,6 +105,9 @@ The bundled scripts are non-interactive and can also be run directly. Both the `
 # Structural + best-practice validation (data → stdout, logs → stderr)
 python skills/skill-creator/scripts/validate_skill.py path/to/some-skill --strict
 
+# Workspace-wide audit (detects duplicate names and trigger keyword collisions)
+python skills/skill-creator/scripts/validate_skill.py --audit-workspace skills/ [--strict] [--fail-on-collision]
+
 # Rubric score with an A–F grade and ranked fixes
 python skills/skill-evaluator/scripts/score_skill.py path/to/some-skill-dir-or-file.md --min 0.8
 ```

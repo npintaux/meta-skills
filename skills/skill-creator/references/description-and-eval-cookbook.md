@@ -35,12 +35,20 @@ The `description` is the **only** thing the agent reads to decide whether to loa
 
 Do **not** tune a description by feel. Build a labelled query set and measure.
 
-Generate ~15–20 realistic queries, split into two halves:
+Generate ~16–20 realistic queries, split into two halves (8–10 per side across the 4 quadrants):
 
 - **should-trigger** (8–10): the messy, colloquial ways a user would ask for this skill.
   e.g. for a db-log skill: *"parse this db log file"*, *"why is my query slow, here's the log"*.
 - **should-NOT-trigger** (8–10): near-misses with overlapping keywords but a different goal —
   these guard against false activation. e.g. *"write a db schema"*, *"fix my SQL syntax error"*.
+
+### The 4-Quadrant Eval Framework
+Structure your ~16–20 test queries across four distinct quadrants to ensure robust boundary testing:
+
+1. **Quadrant 1 — Direct Triggers (canonical)**: Clear, explicit phrasings directly naming the capability (e.g. *"create an agent skill for PR reviews"*).
+2. **Quadrant 2 — Colloquial Triggers (indirect)**: Conversational, synonym-rich requests without jargon (e.g. *"turn this repetitive terminal workflow into something the assistant can run"*).
+3. **Quadrant 3 — Keyword Near-Misses (no-trigger)**: Share trigger keywords or domain vocabulary, but ask for a different task (e.g. *"improve my Python programming skill"*, *"evaluate this ML model benchmark"*).
+4. **Quadrant 4 — Sibling / Adjacent Tasks (no-trigger)**: Legitimate requests that belong to a sibling skill or the base agent (e.g. *"audit this pull request"*, *"generate a test suite"*).
 
 ### Train / validation split (avoid overfitting)
 - Put **60%** of each half in a **train** set you iterate the description against.
@@ -61,9 +69,10 @@ The eval set is an **artifact**, not a throwaway you rebuild each session. Scaff
 {
   "skill": "your-skill-name",
   "queries": [
-    { "query": "turn this workflow into a skill",        "expect": "trigger" },
-    { "query": "why does my skill never activate",        "expect": "trigger" },
-    { "query": "write a bash script to rename files",     "expect": "no-trigger", "note": "scripting, not skill authoring" }
+    { "quadrant": "Q1_direct",           "query": "turn this workflow into a skill",        "expect": "trigger",    "split": "train" },
+    { "quadrant": "Q2_colloquial",       "query": "make a reusable tool from this prompt",   "expect": "trigger",    "split": "val" },
+    { "quadrant": "Q3_near_miss",        "query": "write a bash script to rename files",     "expect": "no-trigger", "split": "train", "note": "scripting, not skill authoring" },
+    { "quadrant": "Q4_sibling_adjacent", "query": "grade this skill against the spec",       "expect": "no-trigger", "split": "val",   "note": "handled by skill-evaluator" }
   ]
 }
 ```
@@ -103,8 +112,23 @@ Pick the body shape that fits *how the task fails*, instead of defaulting to pro
 | Output is the wrong shape | A positive **recipe / contract** + a concrete template to copy |
 | Agent omits a required element | A **REQUIRED structural slot** it must fill |
 | Behaviour depends on context | A **conditional** keyed to an observable predicate |
+| Long multi-step task with context drift | **Phase gates** + verification checklist at each transition; offload heavy reference docs |
 | Fragile fixed sequence (migrations, releases) | A **low-freedom script** the agent just runs |
 | Judgement call / creative work | **High-freedom prose** that explains the *why* |
 
 Avoid: soft "consider/prefer" language for things that are actually mandatory; narrative
 "how I solved it once" storytelling; multi-language example dilution; generic section labels.
+
+---
+
+## 5. Workspace trigger auditing
+
+In multi-skill workspaces or plugins, skills can cannibalize each other's triggers if descriptions share too much keyword vocabulary.
+
+Run workspace validation to verify all skills and detect potential trigger collisions:
+
+```bash
+python scripts/validate_skill.py --audit-workspace <path/to/workspace> [--strict] [--fail-on-collision]
+```
+
+The workspace auditor scans all `SKILL.md` files, verifies name uniqueness, and computes pairwise Jaccard similarity across trigger clauses. Pairs exceeding similarity threshold (Jaccard similarity >= 0.35) with 3+ shared distinctive keywords are flagged as advisory warnings. Pass `--fail-on-collision` if your CI pipeline requires zero trigger overlap.
